@@ -5,9 +5,10 @@ const {
   addKeyword,
 } = require('@bot-whatsapp/bot')
 
-const qrcode = require('qrcode-terminal') // ✅ Importar paquete para mostrar el QR en consola
+const qrcode = require('qrcode-terminal') // ✅ Mostrar QR en consola
 const BaileysProvider = require('@bot-whatsapp/provider/baileys')
 const MockAdapter = require('@bot-whatsapp/database/mock')
+
 const delay = (ms) => new Promise((res) => setTimeout(res, ms))
 
 /***
@@ -72,9 +73,14 @@ const main = async () => {
   const adapterFlow = createFlow([conversacionPrincipal])
   const adapterProvider = createProvider(BaileysProvider)
 
-  // ✅ Mostrar QR en consola (logs de Railway)
+  // ✅ Mostrar QR en consola + diagnóstico
   adapterProvider.on('qr', (qr) => {
+    console.log('[QR EVENTO RECIBIDO]')
     qrcode.generate(qr, { small: true })
+  })
+
+  adapterProvider.on('ready', () => {
+    console.log('[BOT CONECTADO A WHATSAPP]')
   })
 
   createBot({
@@ -85,4 +91,5 @@ const main = async () => {
 }
 
 main()
+
 
