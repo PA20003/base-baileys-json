@@ -5,14 +5,14 @@ const {
   addKeyword,
 } = require('@bot-whatsapp/bot')
 
-const QRPortalWeb = require('@bot-whatsapp/portal')
+const qrcode = require('qrcode-terminal') // ✅ Importar paquete para mostrar el QR en consola
 const BaileysProvider = require('@bot-whatsapp/provider/baileys')
 const MockAdapter = require('@bot-whatsapp/database/mock')
 const delay = (ms) => new Promise((res) => setTimeout(res, ms))
 
 /***
-* Simular peticion async http 1.5 segundos
-*/
+ * Simular petición HTTP falsa con 1.5s de retraso
+ */
 const fakeHTTPMenu = async () => {
   console.log('⚡ Server request!')
   await delay(1500)
@@ -21,32 +21,33 @@ const fakeHTTPMenu = async () => {
 }
 
 /***
-* Simular peticion async http 0.5 segundos
-*/
+ * Simular petición HTTP para pago online con 0.5s de retraso
+ */
 const fakeHTTPPayment = async () => {
   const link = `https://www.buymeacoffee.com/leifermendez?t=${Date.now()}`
   console.log('⚡ Server request!')
   await delay(500)
   console.log('⚡ Server return!')
   return Promise.resolve([
-      { body: `Puedes hacer un *pago* en el siguiente link: ${link}` },
+    { body: `Puedes hacer un *pago* en el siguiente link: ${link}` },
   ])
 }
 
 const flujoCash = addKeyword('efectivo').addAnswer(
   'Ok te espero con los billetes'
 )
+
 const flujosOnline = addKeyword('online').addAnswer(
-  ['Te envio el link'],
+  ['Te envío el link'],
   null,
   async (_, { flowDynamic }) => {
-      const link = await fakeHTTPPayment()
-      return flowDynamic(link)
+    const link = await fakeHTTPPayment()
+    return flowDynamic(link)
   }
 )
 
 const flujoPedido = addKeyword(['pedido', 'pedir']).addAnswer(
-  '¿Como quieres pagar en *efectivo* o *online*?',
+  '¿Cómo quieres pagar: en *efectivo* o *online*?',
   null,
   null,
   [flujoCash, flujosOnline]
@@ -55,15 +56,15 @@ const flujoPedido = addKeyword(['pedido', 'pedir']).addAnswer(
 const conversacionPrincipal = addKeyword(['hola', 'ole', 'buenas'])
   .addAnswer('Bienvenido al restaurante *La cuchara de palo 🙌*')
   .addAnswer(
-      `El menu del día es el siguiente`,
-      null,
-      async (_, { flowDynamic }) => {
-          const menu = await fakeHTTPMenu()
-          return flowDynamic(menu)
-      }
+    'El menú del día es el siguiente:',
+    null,
+    async (_, { flowDynamic }) => {
+      const menu = await fakeHTTPMenu()
+      return flowDynamic(menu)
+    }
   )
   .addAnswer('👉 Si deseas ordenar escribe *pedir*', { delay: 1500 }, null, [
-      flujoPedido,
+    flujoPedido,
   ])
 
 const main = async () => {
@@ -71,13 +72,17 @@ const main = async () => {
   const adapterFlow = createFlow([conversacionPrincipal])
   const adapterProvider = createProvider(BaileysProvider)
 
-  createBot({
-      flow: adapterFlow,
-      provider: adapterProvider,
-      database: adapterDB,
+  // ✅ Mostrar QR en consola (logs de Railway)
+  adapterProvider.on('qr', (qr) => {
+    qrcode.generate(qr, { small: true })
   })
 
-  QRPortalWeb()
+  createBot({
+    flow: adapterFlow,
+    provider: adapterProvider,
+    database: adapterDB,
+  })
 }
 
 main()
+
